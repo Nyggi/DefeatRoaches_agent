@@ -2,10 +2,9 @@ from DQNAgent import DQNAgent
 from Config import *
 import sys
 import gflags as flags
-from pysc2.env import sc2_env
+from pysc2.env import sc2_env, environment
 from datetime import datetime
-from pysc2.lib import features
-from pysc2.lib import actions
+from pysc2.lib import features, actions
 import numpy
 
 
@@ -48,32 +47,43 @@ def mainrun():
             obs = env.step(actions=[actions.FunctionCall(_SELECT_ARMY, [_SELECT_ALL])])[0]
 
             for step in range(MAX_AGENT_STEPS):
-                player_relative = obs.observation["screen"][_PLAYER_RELATIVE]
-                state = Descritize(player_relative)
+                a_actions = obs.observation['available_actions']
+                if _ATTACK_SCREEN in a_actions and _MOVE_SCREEN in a_actions:
+                    player_relative = obs.observation["screen"][_PLAYER_RELATIVE]
+                    state = Descritize(player_relative)
 
-                action = dqnAgent.act(state)
+                    action = dqnAgent.act(state)
 
-                target = [action.y, action.x]
+                    target = [action.y, action.x]
 
-                obs = env.step(actions=[actions.FunctionCall(_MOVE_SCREEN, [_NOT_QUEUED, target])])[0]
-                player_relative = obs.observation["screen"][_PLAYER_RELATIVE]
-                next_state = Descritize(player_relative)
+                    if action.z == 0:
+                        obs = env.step(actions=[actions.FunctionCall(_MOVE_SCREEN, [_NOT_QUEUED, target])])[0]
+                    else:
+                        obs = env.step(actions=[actions.FunctionCall(_ATTACK_SCREEN, [_NOT_QUEUED, target])])[0]
 
-                if step == MAX_AGENT_STEPS:
-                    done = True
+                    player_relative = obs.observation["screen"][_PLAYER_RELATIVE]
+                    next_state = Descritize(player_relative)
+
+                    if obs.step_type == environment.StepType.LAST:
+                        done = True
+                    else:
+                        done = False
+
+                    dqnAgent.remember(state, action, obs.reward, next_state, done)
+
+                    if done:
+                        break
                 else:
-                    done = False
+                    obs = env.step(actions=[actions.FunctionCall(_NO_OP, None)])[0]
 
-                dqnAgent.remember(state, action, obs.reward, next_state, done)
-
-                if len(dqnAgent.memory) > BATCH_SIZE:
-                    dqnAgent.update_target_model()
-                    dqnAgent.replay(BATCH_SIZE)
+            if len(dqnAgent.memory) > BATCH_SIZE:
+                dqnAgent.update_target_model()
+                dqnAgent.replay(BATCH_SIZE)
 
             final_score = int(obs.observation["score_cumulative"][0])
 
-            print("Episode: {}/{}, score: {} e: {:.2}".format(episode, MAX_EPISODES, final_score, dqnAgent.epsilon))
-            file.write("Episode: {}/{}, score: {} e: {:.2} \n".format(episode, MAX_EPISODES, final_score, dqnAgent.epsilon))
+            print("Episode: {}/{}, score: {}".format(episode, MAX_EPISODES, final_score))
+            file.write("Episode: {}/{}, score: {}\n".format(episode, MAX_EPISODES, final_score))
 
 
         if SAVE_REPLAY:

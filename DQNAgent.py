@@ -13,7 +13,7 @@ import json
 
 np.set_printoptions(threshold=np.nan)
 
-Coords = namedtuple('Coords', ['x', 'y'])
+Coords = namedtuple('Coords', ['x', 'y', 'z'])
 
 class DQNAgent:
     def __init__(self):
@@ -51,7 +51,7 @@ class DQNAgent:
 
         #model.add(Dropout(0.5))
 
-        model.add(Conv2D(1, (1, 1)))
+        model.add(Conv2D(2, (1, 1)))
         #model.add(Activation('relu'))
 
         model.compile(optimizer=RMSprop(lr=LEARNING_RATE), loss=self._huber_loss, metrics=['accuracy'])
@@ -69,11 +69,9 @@ class DQNAgent:
             rn = random.randrange(self.action_size)
             coords = unravel_index(rn, (SCREEN_SIZE, SCREEN_SIZE, INPUT_LAYERS))
 
-            return Coords(coords[0], coords[1])
+            return Coords(coords[0], coords[1], coords[2])
         else:
             act_values = self.model.predict(state)
-            if LOGGING:
-                print(json.dumps(act_values.tolist()))
 
             coords = unravel_index(act_values[0].argmax(), (SCREEN_SIZE, SCREEN_SIZE, INPUT_LAYERS))
 
@@ -83,9 +81,9 @@ class DQNAgent:
 
                 dy = np.random.randint(-4, 5)
                 targety = int(max(0, min(84 - 1, coords[1] + dy)))
-                coords = (targetx, targety)
+                coords = (targetx, targety, coords[2])
 
-            return Coords(coords[0], coords[1]) #returns coordinates
+            return Coords(coords[0], coords[1], coords[2]) #returns coordinates
 
     def replay(self, batch_size):
         minibatch = random.sample(self.memory, batch_size)
@@ -95,9 +93,11 @@ class DQNAgent:
             if done:
                 target[0][action.x][action.y] = reward
             else:
-                a = self.act(next_state)
+                a = self.model.predict(next_state)
+                coords = unravel_index(a[0].argmax(), (SCREEN_SIZE, SCREEN_SIZE, INPUT_LAYERS))
+                coords = Coords(coords[0], coords[1], coords[2])
                 t = self.target_model.predict(next_state)[0]
-                target[0][action.x][action.y] = reward + self.gamma * t[a.x][a.y]
+                target[0][action.x][action.y] = reward + self.gamma * t[coords.x][coords.y][coords.z]
             self.model.fit(state, target, epochs=1, verbose=0)
 
         if self.epsilon > self.epsilon_min:
