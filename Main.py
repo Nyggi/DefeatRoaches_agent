@@ -1,5 +1,5 @@
 from DQNAgent import DQNAgent
-from Config import *
+from Config import Config
 import sys
 import gflags as flags
 from pysc2.env import sc2_env, environment
@@ -32,28 +32,28 @@ _SELECT_ARMY = actions.FUNCTIONS.select_army.id
 _NOT_QUEUED = [0]
 _SELECT_ALL = [0]
 
-def mainrun():
+def mainrun(cfg):
     file = open("data/" + datetime.now().strftime('%Y-%m-%d-%H-%M-%S'), "w")
 
     with sc2_env.SC2Env(
-            map_name=MAP,
-            step_mul=STEP_MUL,
-            screen_size_px=(SCREEN_SIZE, SCREEN_SIZE),
-            minimap_size_px=(MINIMAP_SIZE, MINIMAP_SIZE),
-            visualize=RENDER) as env:
+            map_name=cfg.MAP,
+            step_mul=cfg.STEP_MUL,
+            screen_size_px=(cfg.SCREEN_SIZE, cfg.SCREEN_SIZE),
+            minimap_size_px=(cfg.MINIMAP_SIZE, cfg.MINIMAP_SIZE),
+            visualize=cfg.RENDER) as env:
 
-        dqnAgent = DQNAgent()
+        dqnAgent = DQNAgent(cfg)
 
-        for episode in range(MAX_EPISODES): # Game iterations
+        for episode in range(cfg.MAX_EPISODES): # Game iterations
             env.reset()
             obs = env.step(actions=[actions.FunctionCall(_SELECT_ARMY, [_SELECT_ALL])])[0]
 
             player_relative = obs.observation["screen"][_PLAYER_RELATIVE]
             unit_hp = obs.observation["screen"][_UNIT_HP]
 
-            state = GatherObservations([(player_relative, True), (unit_hp, False)])
+            state = GatherObservations([(player_relative, True), (unit_hp, False)], cfg)
 
-            for step in range(MAX_AGENT_STEPS):
+            for step in range(cfg.MAX_AGENT_STEPS):
                 a_actions = obs.observation['available_actions']
                 if _ATTACK_SCREEN in a_actions and _MOVE_SCREEN in a_actions:
 
@@ -69,7 +69,7 @@ def mainrun():
                     player_relative = obs.observation["screen"][_PLAYER_RELATIVE]
                     unit_hp = obs.observation["screen"][_UNIT_HP]
 
-                    next_state = GatherObservations([(player_relative, True), (unit_hp, False)])
+                    next_state = GatherObservations([(player_relative, True), (unit_hp, False)], cfg)
 
                     if obs.step_type == environment.StepType.LAST:
                         done = True
@@ -85,35 +85,35 @@ def mainrun():
                 else:
                     obs = env.step(actions=[actions.FunctionCall(_NO_OP, [])])[0]
 
-            if len(dqnAgent.memory) > BATCH_SIZE:
+            if len(dqnAgent.memory) > cfg.BATCH_SIZE:
                 dqnAgent.update_target_model()
-                dqnAgent.replay(BATCH_SIZE)
+                dqnAgent.replay(cfg.BATCH_SIZE)
 
 
             final_score = int(obs.observation["score_cumulative"][0])
 
-            print("Episode: {}/{}, score: {}".format(episode, MAX_EPISODES, final_score))
-            file.write("Episode: {}/{}, score: {}\n".format(episode, MAX_EPISODES, final_score))
+            print("Episode: {}/{}, score: {}".format(episode, cfg.MAX_EPISODES, final_score))
+            file.write("Episode: {}/{}, score: {}\n".format(episode, cfg.MAX_EPISODES, final_score))
 
 
-        if SAVE_REPLAY:
+        if cfg.SAVE_REPLAY:
             env.save_replay("DefeatRoaches")
 
-def Descritize(feature_layer):
-    layer = np.zeros([SCREEN_SIZE, SCREEN_SIZE, 2], dtype=np.int8)
+def Descritize(feature_layer, cfg):
+    layer = np.zeros([cfg.SCREEN_SIZE, cfg.SCREEN_SIZE, 2], dtype=np.int8)
     for j in [0, 1]:
         indx, indy = (feature_layer == j * 3 + 1).nonzero()
         layer[indx, indy, j] = 1
     return layer
 
-def GatherObservations(feature_layers):
-    output = np.zeros([SCREEN_SIZE, SCREEN_SIZE, 0], dtype=np.float32)
+def GatherObservations(feature_layers, cfg):
+    output = np.zeros([cfg.SCREEN_SIZE, cfg.SCREEN_SIZE, 0], dtype=np.float32)
 
     for layer in feature_layers:
         if layer[1]:
-            l = Descritize(layer[0])
+            l = Descritize(layer[0], cfg)
         else:
-            l = np.zeros([SCREEN_SIZE, SCREEN_SIZE, 1], dtype=np.float32)
+            l = np.zeros([cfg.SCREEN_SIZE, cfg.SCREEN_SIZE, 1], dtype=np.float32)
 
             ind_x, ind_y = layer[0].nonzero()
 
@@ -124,4 +124,6 @@ def GatherObservations(feature_layers):
         o = [output]
     return np.array(o)
 
-mainrun()
+
+singlecfg = Config(firstonly=True)
+mainrun(singlecfg)
