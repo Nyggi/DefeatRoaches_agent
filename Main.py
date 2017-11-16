@@ -5,7 +5,8 @@ import gflags as flags
 from pysc2.env import sc2_env, environment
 from datetime import datetime
 from pysc2.lib import features, actions
-import numpy
+import numpy as np
+import math
 
 
 FLAGS = flags.FLAGS
@@ -23,6 +24,7 @@ _PLAYER_RELATIVE = features.SCREEN_FEATURES.player_relative.index
 _PLAYER_FRIENDLY = 1
 _PLAYER_NEUTRAL = 3  # beacon/minerals
 _PLAYER_HOSTILE = 4
+_UNIT_HP = features.SCREEN_FEATURES.unit_hit_points.index
 _NO_OP = actions.FUNCTIONS.no_op.id
 _MOVE_SCREEN = actions.FUNCTIONS.Move_screen.id
 _ATTACK_SCREEN = actions.FUNCTIONS.Attack_screen.id
@@ -46,11 +48,14 @@ def mainrun():
             env.reset()
             obs = env.step(actions=[actions.FunctionCall(_SELECT_ARMY, [_SELECT_ALL])])[0]
 
+            player_relative = obs.observation["screen"][_PLAYER_RELATIVE]
+            unit_hp = obs.observation["screen"][_UNIT_HP]
+
+            state = GatherObservations([(player_relative, True), (unit_hp, False)])
+
             for step in range(MAX_AGENT_STEPS):
                 a_actions = obs.observation['available_actions']
                 if _ATTACK_SCREEN in a_actions and _MOVE_SCREEN in a_actions:
-                    player_relative = obs.observation["screen"][_PLAYER_RELATIVE]
-                    state = Descritize(player_relative)
 
                     action = dqnAgent.act(state)
 
@@ -62,7 +67,9 @@ def mainrun():
                         obs = env.step(actions=[actions.FunctionCall(_ATTACK_SCREEN, [_NOT_QUEUED, target])])[0]
 
                     player_relative = obs.observation["screen"][_PLAYER_RELATIVE]
-                    next_state = Descritize(player_relative)
+                    unit_hp = obs.observation["screen"][_UNIT_HP]
+
+                    next_state = GatherObservations([(player_relative, True), (unit_hp, False)])
 
                     if obs.step_type == environment.StepType.LAST:
                         done = True
@@ -71,14 +78,17 @@ def mainrun():
 
                     dqnAgent.remember(state, action, obs.reward, next_state, done)
 
+                    state = next_state
+
                     if done:
                         break
                 else:
-                    obs = env.step(actions=[actions.FunctionCall(_NO_OP, None)])[0]
+                    obs = env.step(actions=[actions.FunctionCall(_NO_OP, [])])[0]
 
             if len(dqnAgent.memory) > BATCH_SIZE:
                 dqnAgent.update_target_model()
                 dqnAgent.replay(BATCH_SIZE)
+
 
             final_score = int(obs.observation["score_cumulative"][0])
 
@@ -90,12 +100,28 @@ def mainrun():
             env.save_replay("DefeatRoaches")
 
 def Descritize(feature_layer):
-    layers = []
-    layer = numpy.zeros([SCREEN_SIZE, SCREEN_SIZE, INPUT_LAYERS], dtype=numpy.int8)
+    layer = np.zeros([SCREEN_SIZE, SCREEN_SIZE, 2], dtype=np.int8)
     for j in [0, 1]:
-        indy, indx = (feature_layer == j * 3 + 1).nonzero()
-        layer[indy, indx, j] = 1
-    layers.append(layer)
-    return numpy.array(layers)
+        indx, indy = (feature_layer == j * 3 + 1).nonzero()
+        layer[indx, indy, j] = 1
+    return layer
+
+def GatherObservations(feature_layers):
+    output = np.zeros([SCREEN_SIZE, SCREEN_SIZE, 0], dtype=np.float32)
+
+    for layer in feature_layers:
+        if layer[1]:
+            l = Descritize(layer[0])
+        else:
+            l = np.zeros([SCREEN_SIZE, SCREEN_SIZE, 1], dtype=np.float32)
+
+            ind_x, ind_y = layer[0].nonzero()
+
+            l[ind_x, ind_y, 0] = np.log2(layer[0][ind_x, ind_y])
+
+        output = np.dstack((output, l))
+
+        o = [output]
+    return np.array(o)
 
 mainrun()

@@ -67,13 +67,13 @@ class DQNAgent:
     def act(self, state):
         if np.random.rand() <= self.epsilon: #Explore
             rn = random.randrange(self.action_size)
-            coords = unravel_index(rn, (SCREEN_SIZE, SCREEN_SIZE, INPUT_LAYERS))
+            coords = unravel_index(rn, (SCREEN_SIZE, SCREEN_SIZE, 2))
 
             return Coords(coords[0], coords[1], coords[2])
         else:
             act_values = self.model.predict(state)
 
-            coords = unravel_index(act_values[0].argmax(), (SCREEN_SIZE, SCREEN_SIZE, INPUT_LAYERS))
+            coords = unravel_index(act_values[0].argmax(), (SCREEN_SIZE, SCREEN_SIZE, 2))
 
             if np.random.rand() < MUTATE_COORDS:
                 dx = np.random.randint(-4, 5)
@@ -94,7 +94,7 @@ class DQNAgent:
                 target[0][action.x][action.y] = reward
             else:
                 a = self.model.predict(next_state)
-                coords = unravel_index(a[0].argmax(), (SCREEN_SIZE, SCREEN_SIZE, INPUT_LAYERS))
+                coords = unravel_index(a[0].argmax(), (SCREEN_SIZE, SCREEN_SIZE, 2))
                 coords = Coords(coords[0], coords[1], coords[2])
                 t = self.target_model.predict(next_state)[0]
                 target[0][action.x][action.y] = reward + self.gamma * t[coords.x][coords.y][coords.z]

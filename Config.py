@@ -1,5 +1,5 @@
 #Pysc2 env variables
-RENDER = True
+RENDER = False
 SAVE_REPLAY = True
 MAP = "DefeatRoaches"
 
@@ -9,7 +9,7 @@ STEP_MUL = 8
 MAX_EPISODES = 2000
 BATCH_SIZE = 32
 SCREEN_SIZE = 84
-INPUT_LAYERS = 2
+INPUT_LAYERS = 3
 MINIMAP_SIZE = 0
 
 MEMORY = 20000
