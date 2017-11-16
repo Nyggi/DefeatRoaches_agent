@@ -126,4 +126,22 @@ def GatherObservations(feature_layers, cfg):
 
 
 singlecfg = Config(firstonly=True)
+
+singlecfg.MAX_AGENT_STEPS = 240
+singlecfg.STEP_MUL = 8
+
+singlecfg.MAX_EPISODES = 2000
+singlecfg.BATCH_SIZE = 32
+singlecfg.SCREEN_SIZE = 84
+singlecfg.INPUT_LAYERS = 3
+singlecfg.MINIMAP_SIZE = 0
+singlecfg.MEMORY = 20000
+singlecfg.DISCOUNT_RATE = 0.95
+singlecfg.EXPLORATION_RATE = 1.0
+singlecfg.EXPLORATION_RATE_MIN = 0.01
+singlecfg.EXPLORATION_RATE_DECAY = 0.995
+singlecfg.LEARNING_RATE = 0.00005
+singlecfg.LEARNING_RATE_DECAY = 1
+singlecfg.MUTATE_COORDS = 0.2
+
 mainrun(singlecfg)
