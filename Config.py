@@ -75,7 +75,7 @@ class SingleConfig(BaseConfig):
         self.MINIMAP_SIZE = 0
 
         self.MEMORY = 20000
-        self.DISCOUNT_RATE = 0.95
+        self.DISCOUNT_RATE = 0.99
         self.EXPLORATION_RATE = 1.0
         self.EXPLORATION_RATE_MIN = 0.01
         self.EXPLORATION_RATE_DECAY = 0.995

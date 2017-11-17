@@ -42,17 +42,12 @@ class DQNAgent:
 
         model = Sequential()
         model.add(ZeroPadding2D(padding=(2, 2), input_shape=input_shape))
-        model.add(Conv2D(16, (5, 5)))
-        model.add(Activation('relu'))
+        model.add(Conv2D(16, (5, 5), activation='relu', use_bias=False))
 
         model.add(ZeroPadding2D(padding=(1, 1)))
-        model.add(Conv2D(32, (3, 3)))
-        model.add(Activation('relu'))
+        model.add(Conv2D(32, (3, 3), activation='relu', use_bias=False))
 
-        #model.add(Dropout(0.5))
-
-        model.add(Conv2D(2, (1, 1)))
-        #model.add(Activation('relu'))
+        model.add(Conv2D(2, (1, 1), use_bias=False))
 
         model.compile(optimizer=RMSprop(lr=self.cfg.LEARNING_RATE), loss=self._huber_loss, metrics=['accuracy'])
         return model
@@ -94,13 +89,13 @@ class DQNAgent:
         for state, action, reward, next_state, done in minibatch:
             target = self.model.predict(state)
             if done:
-                target[0][action.x][action.y] = reward
+                target[0][action.x][action.y][action.z] = reward
             else:
-                a = self.model.predict(next_state)
-                coords = unravel_index(a[0].argmax(), (self.cfg.SCREEN_SIZE, self.cfg.SCREEN_SIZE, 2))
+                a = self.model.predict(next_state)[0]
+                coords = unravel_index(a.argmax(), (self.cfg.SCREEN_SIZE, self.cfg.SCREEN_SIZE, 2))
                 coords = Coords(coords[0], coords[1], coords[2])
                 t = self.target_model.predict(next_state)[0]
-                target[0][action.x][action.y] = reward + self.gamma * t[coords.x][coords.y][coords.z]
+                target[0][action.x][action.y][action.z] = (1 - self.learning_rate) * a[coords.x][coords.y][coords.z] + self.learning_rate * (reward + self.gamma * t[coords.x][coords.y][coords.z])
             self.model.fit(state, target, epochs=1, verbose=0)
 
         if self.epsilon > self.epsilon_min:
