@@ -1,6 +1,6 @@
 from DQNAgent import DQNAgent
-from Config import SingleConfig
 import sys
+import os
 import gflags as flags
 from pysc2.env import sc2_env, environment
 from datetime import datetime
@@ -32,8 +32,13 @@ _SELECT_ARMY = actions.FUNCTIONS.select_army.id
 _NOT_QUEUED = [0]
 _SELECT_ALL = [0]
 
-def mainrun(cfg):
-    file = open("data/" + datetime.now().strftime('%Y-%m-%d-%H-%M-%S'), "w")
+
+def mainrun(cfg, fname=None, replay_path="DefeatRoaches"):
+
+    if not fname:
+        fname = 'data/' + datetime.now().strftime('%Y-%m-%d-%H-%M-%S')
+    os.makedirs(os.path.dirname(fname), exist_ok=True)
+    file = open(fname, "w")
 
     with sc2_env.SC2Env(
             map_name=cfg.MAP,
@@ -97,7 +102,7 @@ def mainrun(cfg):
 
 
         if cfg.SAVE_REPLAY:
-            env.save_replay("DefeatRoaches")
+            env.save_replay(replay_path)
 
 def Descritize(feature_layer, cfg):
     layer = np.zeros([cfg.SCREEN_SIZE, cfg.SCREEN_SIZE, 2], dtype=np.int8)
@@ -124,9 +129,3 @@ def GatherObservations(feature_layers, cfg):
         o = [output]
     return np.array(o)
 
-
-singlecfg = SingleConfig()
-
-
-
-mainrun(singlecfg)

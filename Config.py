@@ -30,6 +30,11 @@ class BaseConfig():
 
         self.ACTIONS = self.SCREEN_SIZE ** 2 * 2
 
+    def dump(self):
+        result = {}
+        for sk in vars(self):
+            result[sk] = self.__getattribute__(sk)
+        return result
 
 class MultiConfig(BaseConfig):
     def __init__(self):
@@ -39,7 +44,7 @@ class MultiConfig(BaseConfig):
         self.EXPLORATION_RATE = [1.0, 1.1, 1]
         self.EXPLORATION_RATE_MIN = [0.01, 0.05, 2]
         self.EXPLORATION_RATE_DECAY = [0.995, 0.9, 3]
-        self.LEARNING_RATE = [0.00005, 0.0001, 4]
+        self.LEARNING_RATE = [0.00005, 0.0001, 5]
         self.LEARNING_RATE_DECAY = [1, 1.9, 1]
 
         self.MUTATE_COORDS = [0.2, 0.3, 1]
