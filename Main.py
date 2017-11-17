@@ -56,10 +56,10 @@ def mainrun():
 
                     target = [action.y, action.x]
 
-                    if action.z == 0:
-                        obs = env.step(actions=[actions.FunctionCall(_MOVE_SCREEN, [_NOT_QUEUED, target])])[0]
-                    else:
+                    if state[0][action.y][action.x][1] == 1:
                         obs = env.step(actions=[actions.FunctionCall(_ATTACK_SCREEN, [_NOT_QUEUED, target])])[0]
+                    else:
+                        obs = env.step(actions=[actions.FunctionCall(_MOVE_SCREEN, [_NOT_QUEUED, target])])[0]
 
                     player_relative = obs.observation["screen"][_PLAYER_RELATIVE]
                     next_state = Descritize(player_relative)
@@ -74,7 +74,7 @@ def mainrun():
                     if done:
                         break
                 else:
-                    obs = env.step(actions=[actions.FunctionCall(_NO_OP, None)])[0]
+                    obs = env.step(actions=[actions.FunctionCall(_NO_OP, [])])[0]
 
             if len(dqnAgent.memory) > BATCH_SIZE:
                 dqnAgent.update_target_model()

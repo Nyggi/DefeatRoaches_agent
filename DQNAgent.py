@@ -13,7 +13,7 @@ import json
 
 np.set_printoptions(threshold=np.nan)
 
-Coords = namedtuple('Coords', ['x', 'y', 'z'])
+Coords = namedtuple('Coords', ['x', 'y'])
 
 class DQNAgent:
     def __init__(self):
@@ -35,7 +35,7 @@ class DQNAgent:
 
     def _square_loss(self, target, prediction):
         error = target - prediction
-        return abs(error)
+        return 0.5 * (error**2)
 
     def _build_model(self):
         input_shape = (SCREEN_SIZE, SCREEN_SIZE, INPUT_LAYERS)
@@ -51,10 +51,10 @@ class DQNAgent:
 
         #model.add(Dropout(0.5))
 
-        model.add(Conv2D(2, (1, 1)))
+        model.add(Conv2D(1, (1, 1)))
         #model.add(Activation('relu'))
 
-        model.compile(optimizer=RMSprop(lr=LEARNING_RATE), loss=self._huber_loss, metrics=['accuracy'])
+        model.compile(optimizer=RMSprop(lr=self.learning_rate), loss=self._square_loss, metrics=['accuracy'])
         return model
 
     def update_target_model(self):
@@ -69,7 +69,7 @@ class DQNAgent:
             rn = random.randrange(self.action_size)
             coords = unravel_index(rn, (SCREEN_SIZE, SCREEN_SIZE, INPUT_LAYERS))
 
-            return Coords(coords[0], coords[1], coords[2])
+            return Coords(coords[0], coords[1])
         else:
             act_values = self.model.predict(state)
 
@@ -81,9 +81,9 @@ class DQNAgent:
 
                 dy = np.random.randint(-4, 5)
                 targety = int(max(0, min(84 - 1, coords[1] + dy)))
-                coords = (targetx, targety, coords[2])
+                coords = (targetx, targety)
 
-            return Coords(coords[0], coords[1], coords[2]) #returns coordinates
+            return Coords(coords[0], coords[1]) #returns coordinates
 
     def replay(self, batch_size):
         minibatch = random.sample(self.memory, batch_size)
@@ -95,9 +95,9 @@ class DQNAgent:
             else:
                 a = self.model.predict(next_state)
                 coords = unravel_index(a[0].argmax(), (SCREEN_SIZE, SCREEN_SIZE, INPUT_LAYERS))
-                coords = Coords(coords[0], coords[1], coords[2])
+                coords = Coords(coords[0], coords[1])
                 t = self.target_model.predict(next_state)[0]
-                target[0][action.x][action.y] = reward + self.gamma * t[coords.x][coords.y][coords.z]
+                target[0][action.x][action.y] = reward + self.gamma * t[coords.x][coords.y]
             self.model.fit(state, target, epochs=1, verbose=0)
 
         if self.epsilon > self.epsilon_min:
