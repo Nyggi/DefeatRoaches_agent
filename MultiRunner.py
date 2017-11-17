@@ -8,7 +8,7 @@ from Main import mainrun
 from Config import MultiConfig
 
 # How many iterations
-ITERS = 100
+ITERS = 30
 
 
 # Create name for this multirun

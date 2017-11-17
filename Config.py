@@ -26,8 +26,6 @@ class BaseConfig():
         self.LEARNING_RATE_DECAY = 1
         self.MUTATE_COORDS = 0.2
 
-        self.MUTATE_COORDS = [0.2, 0.3]
-
         self.ACTIONS = self.SCREEN_SIZE ** 2 * 2
 
     def dump(self):
@@ -39,15 +37,17 @@ class BaseConfig():
 class MultiConfig(BaseConfig):
     def __init__(self):
         super().__init__()
-        self.MEMORY = [20000, 40000]
-        self.DISCOUNT_RATE = [0.95, 0.99, 2]
-        self.EXPLORATION_RATE = [1.0, 1.1, 1]
-        self.EXPLORATION_RATE_MIN = [0.01, 0.05, 2]
-        self.EXPLORATION_RATE_DECAY = [0.995, 0.9, 3]
-        self.LEARNING_RATE = [0.00005, 0.0001, 5]
-        self.LEARNING_RATE_DECAY = [1, 1.9, 1]
+        self.MAX_EPISODES = 5000
 
-        self.MUTATE_COORDS = [0.2, 0.3, 1]
+        self.MEMORY = [5000, 40000]
+        self.DISCOUNT_RATE = [0.90, 0.995, 2]
+        self.EXPLORATION_RATE = 1
+        self.EXPLORATION_RATE_MIN = [0.002, 0.02, 3]
+        self.EXPLORATION_RATE_DECAY = [0.995, 0.9, 3]
+        self.LEARNING_RATE = [0.00001, 0.001, 5]
+        self.LEARNING_RATE_DECAY = 1
+
+        self.MUTATE_COORDS = [0.05, 0.3, 2]
 
         for lvk in vars(self):
             lv = self.__getattribute__(lvk)
