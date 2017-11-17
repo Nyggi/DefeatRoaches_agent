@@ -56,7 +56,7 @@ def mainrun():
 
                     target = [action.y, action.x]
 
-                    if state[0][action.y][action.x][1] == 1:
+                    if state[0][action.x][action.y][1] == 1:
                         obs = env.step(actions=[actions.FunctionCall(_ATTACK_SCREEN, [_NOT_QUEUED, target])])[0]
                     else:
                         obs = env.step(actions=[actions.FunctionCall(_MOVE_SCREEN, [_NOT_QUEUED, target])])[0]
