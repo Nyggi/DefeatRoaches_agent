@@ -7,15 +7,18 @@ from jinja2 import Template
 from Main import mainrun
 from Config import MultiConfig
 
+# How many iterations
+ITERS = 100
+
+
 # Create name for this multirun
 mname = str(uuid.uuid4())[:8]
 
 svgpaths = []
 
-for ri in range(8):
+for ri in range(ITERS):
 
     mcf = MultiConfig()
-    mcf.MAX_EPISODES = 4
     current_path = 'data/multirun_{mname}/{rint:0{width}d}/'.format(mname=mname, rint=ri, width=len(str(mcf.MAX_EPISODES)))
 
     mainrun(mcf, fname=current_path + 'output', replay_path=os.path.abspath(current_path))
@@ -60,3 +63,5 @@ rendered_template = template.render(svgpaths=sortedsvgpaths, multirunid=mname)
 
 with open('data/multirun_{mname}/overview.html'.format(mname=mname), 'w') as of:
     of.write(rendered_template)
+
+print('Done with multirun: {0}'.format(mname))
