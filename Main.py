@@ -7,6 +7,7 @@ from datetime import datetime
 from pysc2.lib import features, actions
 import numpy as np
 import math
+import random
 
 
 FLAGS = flags.FLAGS
@@ -53,6 +54,8 @@ def mainrun(cfg, fname=None, replay_path="DefeatRoaches"):
             env.reset()
             obs = env.step(actions=[actions.FunctionCall(_SELECT_ARMY, [_SELECT_ALL])])[0]
 
+            game_mem = []
+
             player_relative = obs.observation["screen"][_PLAYER_RELATIVE]
             unit_hp = obs.observation["screen"][_UNIT_HP]
 
@@ -82,6 +85,7 @@ def mainrun(cfg, fname=None, replay_path="DefeatRoaches"):
                         done = False
 
                     dqnAgent.remember(state, action, obs.reward, next_state, done)
+                    game_mem.append((state, action, obs.reward, next_state, done))
 
                     state = next_state
 
@@ -92,7 +96,11 @@ def mainrun(cfg, fname=None, replay_path="DefeatRoaches"):
 
             if len(dqnAgent.memory) > cfg.BATCH_SIZE:
                 dqnAgent.update_target_model()
-                dqnAgent.replay(cfg.BATCH_SIZE)
+                dqnAgent.replay(game_mem)
+                minibatch = random.sample(dqnAgent.memory, cfg.BATCH_SIZE)
+                dqnAgent.replay(minibatch)
+                if dqnAgent.epsilon > dqnAgent.epsilon_min:
+                    dqnAgent.epsilon *= dqnAgent.epsilon_decay
 
 
             final_score = int(obs.observation["score_cumulative"][0])

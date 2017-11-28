@@ -11,14 +11,14 @@ class BaseConfig():
         self.MAX_AGENT_STEPS = 240
         self.STEP_MUL = 8
 
-        self.MAX_EPISODES = 2000
+        self.MAX_EPISODES = 20000
         self.BATCH_SIZE = 32
         self.SCREEN_SIZE = 84
         self.INPUT_LAYERS = 3
         self.MINIMAP_SIZE = 0
 
         self.MEMORY = 20000
-        self.DISCOUNT_RATE = 0.95
+        self.DISCOUNT_RATE = 0.99
         self.EXPLORATION_RATE = 1.0
         self.EXPLORATION_RATE_MIN = 0.01
         self.EXPLORATION_RATE_DECAY = 0.995
@@ -37,7 +37,7 @@ class BaseConfig():
 class MultiConfig(BaseConfig):
     def __init__(self):
         super().__init__()
-        self.MAX_EPISODES = 5000
+        self.MAX_EPISODES = 300
 
         self.MEMORY = [5000, 40000]
         self.DISCOUNT_RATE = [0.90, 0.995, 2]
@@ -69,21 +69,3 @@ class MultiConfig(BaseConfig):
 class SingleConfig(BaseConfig):
     def __init__(self):
         super().__init__()
-
-        self.MAX_AGENT_STEPS = 240
-        self.STEP_MUL = 8
-
-        self.MAX_EPISODES = 2000
-        self.BATCH_SIZE = 32
-        self.SCREEN_SIZE = 84
-        self.INPUT_LAYERS = 3
-        self.MINIMAP_SIZE = 0
-
-        self.MEMORY = 20000
-        self.DISCOUNT_RATE = 0.99
-        self.EXPLORATION_RATE = 1.0
-        self.EXPLORATION_RATE_MIN = 0.01
-        self.EXPLORATION_RATE_DECAY = 0.995
-        self.LEARNING_RATE = 0.00005
-        self.LEARNING_RATE_DECAY = 1
-        self.MUTATE_COORDS = 0.2

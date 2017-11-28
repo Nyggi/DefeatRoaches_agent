@@ -50,6 +50,7 @@ class DQNAgent:
         model.add(Conv2D(2, (1, 1), use_bias=False))
 
         model.compile(optimizer=RMSprop(lr=self.cfg.LEARNING_RATE), loss=self._huber_loss, metrics=['accuracy'])
+
         return model
 
     def update_target_model(self):
@@ -83,24 +84,22 @@ class DQNAgent:
 
             return Coords(coords[0], coords[1], coords[2]) #returns coordinates
 
-    def replay(self, batch_size):
-        minibatch = random.sample(self.memory, batch_size)
+    def replay(self, memory):
 
-        for state, action, reward, next_state, done in minibatch:
+        for state, action, reward, next_state, done in memory:
             target = self.model.predict(state)
             if done:
                 target[0][action.x][action.y][action.z] = reward
             else:
-                a = self.model.predict(next_state)[0]
-                coords = unravel_index(a.argmax(), (self.cfg.SCREEN_SIZE, self.cfg.SCREEN_SIZE, 2))
-                coords = Coords(coords[0], coords[1], coords[2])
-                t = self.target_model.predict(next_state)[0]
-                target[0][action.x][action.y][action.z] = (1 - self.learning_rate) * a[coords.x][coords.y][coords.z] + self.learning_rate * (reward + self.gamma * t[coords.x][coords.y][coords.z])
-            self.model.fit(state, target, epochs=1, verbose=0)
+                next = self.model.predict(next_state)[0]
+                coords = unravel_index(next.argmax(), (self.cfg.SCREEN_SIZE, self.cfg.SCREEN_SIZE, 2))
+                coords_n = Coords(coords[0], coords[1], coords[2])
 
-        if self.epsilon > self.epsilon_min:
-            self.epsilon *= self.epsilon_decay
-        self.learning_rate *= self.learning_rate_decay
+                coords = unravel_index(target[0].argmax(), (self.cfg.SCREEN_SIZE, self.cfg.SCREEN_SIZE, 2))
+                coords_f = Coords(coords[0], coords[1], coords[2])
+
+                target[0][action.x][action.y][action.z] = reward + self.gamma * (next[coords_n.x][coords_n.y][coords_n.z] - target[0][coords_f.x][coords_f.y][coords_f.z])
+            self.model.fit(state, target, epochs=1, verbose=0)
 
     def load(self, name):
         self.model.load_weights(name)
