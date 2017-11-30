@@ -6,9 +6,7 @@ from keras.layers import Activation, Conv2D, MaxPooling2D, Flatten, Dense, Dropo
 from keras.optimizers import Adam, RMSprop
 from keras import backend as K
 from collections import namedtuple
-import keras
 from numpy import unravel_index
-import json
 
 np.set_printoptions(threshold=np.nan)
 
@@ -33,9 +31,10 @@ class DQNAgent:
         error = prediction - target
         return K.mean(K.sqrt(1 + K.square(error)) - 1, axis=-1)
 
-    def _square_loss(self, target, prediction):
+    def _clipped_loss(self, target, prediction):
         error = target - prediction
-        return abs(error)
+
+        return error
 
     def _build_model(self):
         input_shape = (self.cfg.SCREEN_SIZE, self.cfg.SCREEN_SIZE, self.cfg.INPUT_LAYERS)
@@ -49,7 +48,7 @@ class DQNAgent:
 
         model.add(Conv2D(2, (1, 1), use_bias=False))
 
-        model.compile(optimizer=RMSprop(lr=self.cfg.LEARNING_RATE), loss=self._huber_loss, metrics=['accuracy'])
+        model.compile(optimizer=RMSprop(lr=self.cfg.LEARNING_RATE, clipvalue=1), loss=self._clipped_loss, metrics=['accuracy'])
 
         return model
 
@@ -73,7 +72,6 @@ class DQNAgent:
 
             coords = unravel_index(act_values[0].argmax(), (self.cfg.SCREEN_SIZE, self.cfg.SCREEN_SIZE, 2))
 
-
             if np.random.rand() < self.cfg.MUTATE_COORDS:
                 dx = np.random.randint(-4, 5)
                 targetx = int(max(0, min(84 - 1, coords[0] + dx)))
@@ -86,10 +84,12 @@ class DQNAgent:
 
     def replay(self, memory):
 
+        targets = []
+        states = []
         for state, action, reward, next_state, done in memory:
-            target = self.model.predict(state)
+            target = self.model.predict(state)[0]
             if done:
-                target[0][action.x][action.y][action.z] = reward
+                target[action.x][action.y][action.z] = reward
             else:
                 next = self.model.predict(next_state)[0]
                 coords = unravel_index(next.argmax(), (self.cfg.SCREEN_SIZE, self.cfg.SCREEN_SIZE, 2))
@@ -98,8 +98,15 @@ class DQNAgent:
                 coords = unravel_index(target[0].argmax(), (self.cfg.SCREEN_SIZE, self.cfg.SCREEN_SIZE, 2))
                 coords_f = Coords(coords[0], coords[1], coords[2])
 
-                target[0][action.x][action.y][action.z] = reward + self.gamma * (next[coords_n.x][coords_n.y][coords_n.z] - target[0][coords_f.x][coords_f.y][coords_f.z])
-            self.model.fit(state, target, epochs=1, verbose=0)
+                target_model = self.target_model.predict(next_state)[0]
+
+                target[action.x][action.y][action.z] = reward + self.gamma * (target_model[coords_n.x][coords_n.y][coords_n.z] - target_model[coords_f.x][coords_f.y][coords_f.z])
+                targets.append(target)
+                states.append(state[0])
+
+        np_targets = np.array(targets)
+        np_states = np.array(states)
+        self.model.fit(np_states, np_targets, epochs=1, verbose=0)
 
     def load(self, name):
         self.model.load_weights(name)

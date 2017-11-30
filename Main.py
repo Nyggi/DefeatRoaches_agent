@@ -50,6 +50,8 @@ def mainrun(cfg, fname=None, replay_path="DefeatRoaches"):
 
         dqnAgent = DQNAgent(cfg)
 
+        steps = 0
+
         for episode in range(cfg.MAX_EPISODES): # Game iterations
             env.reset()
             obs = env.step(actions=[actions.FunctionCall(_SELECT_ARMY, [_SELECT_ALL])])[0]
@@ -89,18 +91,27 @@ def mainrun(cfg, fname=None, replay_path="DefeatRoaches"):
 
                     state = next_state
 
+                    if cfg.TRAIN_MEANWHILE and len(dqnAgent.memory) > cfg.TRAINING_START:
+                        minibatch = random.sample(dqnAgent.memory, cfg.BATCH_SIZE)
+                        dqnAgent.replay(minibatch)
+                        if dqnAgent.epsilon > dqnAgent.epsilon_min:
+                            dqnAgent.epsilon -= dqnAgent.epsilon_decay
+
                     if done:
                         break
                 else:
                     obs = env.step(actions=[actions.FunctionCall(_NO_OP, [])])[0]
 
-            if len(dqnAgent.memory) > cfg.BATCH_SIZE:
-                dqnAgent.update_target_model()
+                steps += 1
+                if steps % cfg.TARGET_UPDATE_RATE == 0:
+                    dqnAgent.update_target_model()
+
+            if cfg.TRAIN_AFTER and len(dqnAgent.memory) > cfg.BATCH_SIZE:
                 dqnAgent.replay(game_mem)
                 minibatch = random.sample(dqnAgent.memory, cfg.BATCH_SIZE)
                 dqnAgent.replay(minibatch)
                 if dqnAgent.epsilon > dqnAgent.epsilon_min:
-                    dqnAgent.epsilon *= dqnAgent.epsilon_decay
+                   dqnAgent.epsilon -= dqnAgent.epsilon_decay
 
 
             final_score = int(obs.observation["score_cumulative"][0])
