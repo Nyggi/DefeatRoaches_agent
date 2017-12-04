@@ -20,7 +20,7 @@ class DQNAgent:
         self.gamma = cfg.DISCOUNT_RATE
         self.epsilon = cfg.EXPLORATION_RATE
         self.epsilon_min = cfg.EXPLORATION_RATE_MIN
-        self.epsilon_decay = cfg.EXPLORATION_RATE_DECAY
+        self.epsilon_decay = (cfg.EXPLORATION_RATE - cfg.EXPLORATION_RATE_MIN) / cfg.EXPLORATION_ANNEALING
         self.learning_rate = cfg.LEARNING_RATE
         self.learning_rate_decay = cfg.LEARNING_RATE_DECAY
         self.model = self._build_model()
@@ -30,11 +30,6 @@ class DQNAgent:
     def _huber_loss(self, target, prediction):
         error = prediction - target
         return K.mean(K.sqrt(1 + K.square(error)) - 1, axis=-1)
-
-    def _clipped_loss(self, target, prediction):
-        error = target - prediction
-
-        return error
 
     def _build_model(self):
         input_shape = (self.cfg.SCREEN_SIZE, self.cfg.SCREEN_SIZE, self.cfg.INPUT_LAYERS)
@@ -48,7 +43,7 @@ class DQNAgent:
 
         model.add(Conv2D(2, (1, 1), use_bias=False))
 
-        model.compile(optimizer=RMSprop(lr=self.cfg.LEARNING_RATE, clipvalue=1), loss=self._clipped_loss, metrics=['accuracy'])
+        model.compile(optimizer=RMSprop(lr=self.cfg.LEARNING_RATE, clipvalue=1), loss=self._huber_loss, metrics=['accuracy'])
 
         return model
 

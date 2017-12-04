@@ -91,11 +91,12 @@ def mainrun(cfg, fname=None, replay_path="DefeatRoaches"):
 
                     state = next_state
 
+                    if dqnAgent.epsilon > dqnAgent.epsilon_min:
+                        dqnAgent.epsilon -= dqnAgent.epsilon_decay
+
                     if cfg.TRAIN_MEANWHILE and len(dqnAgent.memory) > cfg.TRAINING_START:
                         minibatch = random.sample(dqnAgent.memory, cfg.BATCH_SIZE)
                         dqnAgent.replay(minibatch)
-                        if dqnAgent.epsilon > dqnAgent.epsilon_min:
-                            dqnAgent.epsilon -= dqnAgent.epsilon_decay
 
                     if done:
                         break

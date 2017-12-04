@@ -15,7 +15,7 @@ class BaseConfig():
 
         self.MAX_EPISODES = 200000
         self.BATCH_SIZE = 32
-        self.SCREEN_SIZE = 84
+        self.SCREEN_SIZE = 64
         self.INPUT_LAYERS = 3
         self.MINIMAP_SIZE = 0
 
@@ -23,7 +23,7 @@ class BaseConfig():
         self.DISCOUNT_RATE = 0.99
         self.EXPLORATION_RATE = 1.0
         self.EXPLORATION_RATE_MIN = 0.05
-        self.EXPLORATION_RATE_DECAY = 9.5e-5
+        self.EXPLORATION_ANNEALING = 1000000
         self.LEARNING_RATE = 0.00025
         self.LEARNING_RATE_DECAY = 1
         self.MUTATE_COORDS = 0.2
@@ -43,15 +43,16 @@ class MultiConfig(BaseConfig):
         super().__init__()
         self.MAX_EPISODES = 300
 
-        self.MEMORY = [5000, 40000]
+        self.MEMORY = [5000, 100000]
         self.DISCOUNT_RATE = [0.90, 0.995, 2]
         self.EXPLORATION_RATE = 1
-        self.EXPLORATION_RATE_MIN = [0.002, 0.02, 3]
-        self.EXPLORATION_RATE_DECAY = [0.995, 0.9, 3]
+        self.EXPLORATION_RATE_MIN = [0.005, 0.1, 3]
+        self.EXPLORATION_ANNEALING = [1000, 100000]
         self.LEARNING_RATE = [0.00001, 0.001, 5]
-        self.LEARNING_RATE_DECAY = 1
+        self.TARGET_UPDATE_RATE = [2000, 15000]
+        self.TRAINING_START = [1000, 10000]
 
-        self.MUTATE_COORDS = [0.05, 0.3, 2]
+        self.MUTATE_COORDS = [0.01, 0.2, 2]
 
         for lvk in vars(self):
             lv = self.__getattribute__(lvk)
