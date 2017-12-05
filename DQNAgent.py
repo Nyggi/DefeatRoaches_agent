@@ -69,10 +69,10 @@ class DQNAgent:
 
             if np.random.rand() < self.cfg.MUTATE_COORDS:
                 dx = np.random.randint(-4, 5)
-                targetx = int(max(0, min(84 - 1, coords[0] + dx)))
+                targetx = int(max(0, min(self.cfg.SCREEN_SIZE - 1, coords[0] + dx)))
 
                 dy = np.random.randint(-4, 5)
-                targety = int(max(0, min(84 - 1, coords[1] + dy)))
+                targety = int(max(0, min(self.cfg.SCREEN_SIZE - 1, coords[1] + dy)))
                 coords = (targetx, targety, coords[2])
 
             return Coords(coords[0], coords[1], coords[2]) #returns coordinates
