@@ -31,6 +31,9 @@ class DQNAgent:
         error = prediction - target
         return K.mean(K.sqrt(1 + K.square(error)) - 1, axis=-1)
 
+    def _squared_loss(self, target, prediction):
+        return (target - prediction)**2
+
     def _build_model(self):
         input_shape = (self.cfg.SCREEN_SIZE, self.cfg.SCREEN_SIZE, self.cfg.INPUT_LAYERS)
 
@@ -77,6 +80,8 @@ class DQNAgent:
 
             return Coords(coords[0], coords[1], coords[2]) #returns coordinates
 
+
+
     def replay(self, memory):
 
         targets = []
@@ -93,9 +98,10 @@ class DQNAgent:
                 coords = unravel_index(target[0].argmax(), (self.cfg.SCREEN_SIZE, self.cfg.SCREEN_SIZE, 2))
                 coords_f = Coords(coords[0], coords[1], coords[2])
 
-                target_model = self.target_model.predict(next_state)[0]
+                target_model_next = self.target_model.predict(next_state)[0]
+                target_model_current = self.target_model.predict(state)[0]
 
-                target[action.x][action.y][action.z] = reward + self.gamma * (target_model[coords_n.x][coords_n.y][coords_n.z] - target_model[coords_f.x][coords_f.y][coords_f.z])
+                target[action.x][action.y][action.z] = reward + self.gamma * (target_model_next[coords_n.x][coords_n.y][coords_n.z] - target_model_current[coords_f.x][coords_f.y][coords_f.z])
                 targets.append(target)
                 states.append(state[0])
 
