@@ -95,13 +95,9 @@ class DQNAgent:
                 coords = unravel_index(next.argmax(), (self.cfg.SCREEN_SIZE, self.cfg.SCREEN_SIZE, 2))
                 coords_n = Coords(coords[0], coords[1], coords[2])
 
-                coords = unravel_index(target[0].argmax(), (self.cfg.SCREEN_SIZE, self.cfg.SCREEN_SIZE, 2))
-                coords_f = Coords(coords[0], coords[1], coords[2])
-
                 target_model_next = self.target_model.predict(next_state)[0]
-                target_model_current = self.target_model.predict(state)[0]
 
-                target[action.x][action.y][action.z] = reward + self.gamma * (target_model_next[coords_n.x][coords_n.y][coords_n.z] - target_model_current[coords_f.x][coords_f.y][coords_f.z])
+                target[action.x][action.y][action.z] = reward + self.gamma * target_model_next[coords_n.x][coords_n.y][coords_n.z]
                 targets.append(target)
                 states.append(state[0])
 
